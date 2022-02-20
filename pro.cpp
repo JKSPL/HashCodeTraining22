@@ -30,6 +30,8 @@ sim dor(const c&) { ris; }
 #define imie(...) " [" << #__VA_ARGS__ ": " << (__VA_ARGS__) << "] "
 // debug & operator << (debug & dd, P p) { dd << "(" << p.x << ", " << p.y << ")"; return dd; }
 
+#define ALL(x) (x).begin(), (x).end()
+
 const int LIMIT = 10000;
 
 // TODO, allow an ad not to contain the given point
@@ -96,6 +98,58 @@ void output() {
 	// cerr << "score = " << llround(1e9 * total_score / n + 1e-9) / 1e7 << "%" << endl;
 }
 
+std::mt19937 gen(1337);
+
+bool intersects_any(vector<Ad> & tads, int idx){
+    for(int i = 0; i < (int)tads.size(); i++){
+        if( i == idx ){
+            continue;
+        }
+        if(tads[idx].intersects(tads[i])){
+            return true;
+        }
+    }
+    return false;
+}
+
+void expand(vector<Ad> & tads, int idx){
+    struct dir {
+        int * ptr;
+        int dir; // 1 or -1
+    };
+    Ad & ad = tads[idx];
+    vector<dir> dirs = {
+            {&ad.x1, -1},
+            {&ad.y1, -1},
+            {&ad.x2, 1},
+            {&ad.y2, 1}
+    };
+    shuffle(ALL(dirs), gen);
+    for(auto possible_direction : dirs){
+        int desired_area = ad.target_area;
+        int * p = possible_direction.ptr;
+        int d = possible_direction.dir;
+        int l = 0, r = 5000;
+        while(l < r){
+            int m = (l + r + 1) / 2;
+            *p += d * m;
+            if(intersects_any(tads, idx) || ad.get_area() > desired_area || !ad.check()){
+                r = m - 1;
+            } else{
+                l = m;
+            }
+            *p -= d * m;
+        }
+        *p += d * l;
+    }
+}
+
+void improve(){
+    uniform_int_distribution<> dist(0, (int)ads.size() - 1);
+    int rid = dist(gen);
+    expand(ads, rid);
+}
+
 int main() {
 	// started at 14:30
 	read();
@@ -141,6 +195,11 @@ int main() {
 			}
 		}
 	}
+	
+    auto start_time = clock();
+    while(clock() - start_time < CLOCKS_PER_SEC * 4.5){
+        improve();
+    }
 	
 	for(int i = 0; i < n; ++i) {
 		for(int j = i + 1; j < n; ++j) {
