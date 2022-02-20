@@ -62,11 +62,13 @@ struct Ad {
 	void print() const {
 		printf("%d %d %d %d\n", x1, y1, x2, y2);
 	}
+	int get_area() const {
+		return (x2 - x1) * (y2 - y1);
+	}
 	double score() const {
 		assert(check());
-		double s = (x2 - x1) * (y2 - y1);
+		double s = get_area();
 		double r = target_area;
-		cerr << s << " " << r << endl;
 		double tmp = (1 - min(r, s) / max(r, s));
 		return 1 - tmp * tmp;
 	}
@@ -89,8 +91,9 @@ void output() {
 		ad.print();
 		total_score += ad.score();
 	}
-	cerr << "sum = " << total_score << endl;
-	cerr << "score = " << llround(1e9 * total_score / n + 1e-9) << endl;
+	// cerr << "sum = " << total_score << endl;
+	cerr << llround(1e9 * total_score / n + 1e-9) << endl;
+	// cerr << "score = " << llround(1e9 * total_score / n + 1e-9) / 1e7 << "%" << endl;
 }
 
 int main() {
@@ -101,26 +104,42 @@ int main() {
 		ads[i].make_small();
 	}
 	
-	for(int i = 0; i < n; ++i) {
-		// keep expanding as long as possible
-		while(true) {
-			ads[i].x2++;
-			ads[i].y2++;
-			if(!ads[i].check()) {
-				break;
+	vector<bool> finished(n);
+	for(int turn = 0; turn < 8000; ++turn) {
+		for(int i = 0; i < n; ++i) {
+			if(finished[i]) {
+				continue;
 			}
-			bool ok = true;
-			for(int j = 0; j < n; ++j) {
-				if(i != j && ads[i].intersects(ads[j])) {
-					ok = false;
+			bool anything_happened = false;
+			for(int rep = 0; rep < 4; ++rep) {
+				Ad maybe = ads[i];
+				if(rep == 0) maybe.x1--;
+				else if(rep == 1) maybe.y1--;
+				else if(rep == 2) maybe.x2++;
+				else maybe.y2++;
+				auto is_ok = [&]() {
+					if(maybe.get_area() > maybe.target_area) {
+						return false;
+					}
+					if(!maybe.check()) {
+						return false;
+					}
+					for(int j = 0; j < n; ++j) {
+						if(i != j && maybe.intersects(ads[j])) {
+							return false;
+						}
+					}
+					return true;
+				};
+				if(is_ok()) {
+					ads[i] = maybe;
+					anything_happened = true;
 				}
 			}
-			if(!ok) {
-				break;
+			if(!anything_happened) {
+				finished[i] = true;
 			}
 		}
-		ads[i].x2--;
-		ads[i].y2--;
 	}
 	
 	for(int i = 0; i < n; ++i) {
