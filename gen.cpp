@@ -27,17 +27,15 @@ sim dor(rge<c> d) {
 sim dor(const c&) { ris; }
 #endif
 };
-#define imie(...) " [" << #__VA_ARGS__ ": " << (__VA_ARGS__) << "] "
-// debug & operator << (debug & dd, P p) { dd << "(" << p.x << ", " << p.y << ")"; return dd; }
-std::mt19937 gen;
 
 #define ALL(x) (x).begin(), (x).end()
 
 vector<int> sample_distinct(int n, int lb, int rb){
+    int total = (rb - lb) + 1;
     uniform_int_distribution<> dist(lb, rb);
     set<int> numbers;
     while(numbers.size() != n){
-        int x = dist(gen);
+        int x = rand() % total + lb;
         if(!numbers.count(x)){
             numbers.insert(x);
         }
@@ -45,18 +43,21 @@ vector<int> sample_distinct(int n, int lb, int rb){
     return {ALL(numbers)};
 }
 
+double random_double(){
+    return (double)rand() / RAND_MAX;
+}
+
 int argc = 0;
 
 int main(int argc, char ** argv) {
-    gen.seed(stoi(argv[1]));
-    uniform_real_distribution<> dist(0, 1);
-    int n = int(round(50 * pow(4, dist(gen))));
+    srand(stoi(argv[1]));
+    int n = lround(50 * pow(4, random_double()));
     vector<int> p1(10000);
     vector<int> p2(10000);
 
     for(auto p: {&p1, &p2}){
         iota(ALL(*p), 0);
-        shuffle(ALL(*p), gen);
+        random_shuffle(ALL(*p));
     }
     vector<int> Q = sample_distinct(n - 1, 1, 99999999);
     Q.insert(Q.begin(), 0);
